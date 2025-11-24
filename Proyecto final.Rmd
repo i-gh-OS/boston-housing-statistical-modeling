@@ -6,7 +6,6 @@ output: html_notebook
 # 1. Carga de datos y Análisis previo
 
 ```{r}
-install.packages("car")
 library(car)
 data<- read.csv("insurance.csv", sep=",", stringsAsFactors=TRUE)
 head(data)

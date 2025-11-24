@@ -1,5 +1,5 @@
 ---
-title: "Práctica 3"
+title: "Poryecto final"
 output: html_notebook
 ---
 
@@ -8,7 +8,7 @@ output: html_notebook
 ```{r}
 install.packages("car")
 library(car)
-data<- read.csv("Boston.csv", sep=",", stringsAsFactors=TRUE)
+data<- read.csv("insurance.csv", sep=",", stringsAsFactors=TRUE)
 head(data)
 str(data)
 colSums(is.na(data))#Devuelve el nº de valores NA para cada variable

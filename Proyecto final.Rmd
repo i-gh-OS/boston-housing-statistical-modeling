@@ -1,0 +1,335 @@
+---
+title: "Práctica 3"
+output: html_notebook
+---
+
+# 1. Carga de datos y Análisis previo
+
+```{r}
+install.packages("car")
+library(car)
+data<- read.csv("Boston.csv", sep=",", stringsAsFactors=TRUE)
+head(data)
+str(data)
+colSums(is.na(data))#Devuelve el nº de valores NA para cada variable
+colSums(!is.finite(as.matrix(data)))
+data
+```
+
+## Exploratorio rápido
+
+```{r}
+str(data)
+summary(data)
+hist(data$medv, main = "Distribución de medv", xlab = "medv")
+
+```
+```{r}
+# Seleccionamos variables numéricas relevantes
+vars <- c("medv", "crim", "zn", "chas", "nox", "rm",
+          "dis", "rad", "tax", "ptratio", "black", "lstat")
+
+cor_matrix <- cor(data[vars])
+
+cor_matrix   # para ver la matriz en consola
+
+```
+
+
+# 2. Especificación del modelo
+
+Vamos a plantear un modelo con todas las variables \# Especificación del modelo
+
+## 2.1 Construcción del modelo de regresión lineal múltiple
+
+```{r}
+model1 <- lm(medv ~ ., data=data)
+summary(model1)
+```
+```{r}
+
+model_base_red <- lm(medv ~ crim + zn + chas + nox + rm +
+                                  dis + rad + tax + ptratio +
+                                  black + lstat,
+                     data = data)
+
+summary(model_base_red)
+
+# Comparación con el modelo base con otras medidas de bondad ajuste
+AIC(model1, model_base_red)
+BIC(model1, model_base_red)
+```
+
+
+## 2.2 Estimar el modelo con log
+
+```{r}
+#Vemos graficamente si parece que tendría sentido aplicar transformación logarítmica en la variable dependiente medv
+library(ggplot2)
+
+# Distribución original
+ggplot(data, aes(x=medv)) +
+  geom_histogram(bins=30, fill="steelblue", color="black") +
+  labs(title="Distribución original de medv")
+
+data$log_medv <- log(data$medv)
+# Distribución logarítmica
+ggplot(data, aes(x=log_medv)) +
+  geom_histogram(bins=30, fill="darkgreen", color="black") +
+  labs(title="Distribución de log(medv)")
+```
+
+```{r}
+# Crear la variable logarítmica
+data$log_medv <- log(data$medv)
+
+# Modelo con log(medv)
+model_log <- lm(log_medv ~ crim + zn + chas + nox + rm +
+                             dis + rad + tax + ptratio + black + lstat,
+                data = data)
+
+summary(model_log)
+
+# Comparación con el modelo base con otras medidas de bondad ajuste
+AIC(model_base_red, model_log)
+BIC(model_base_red, model_log)
+```
+
+
+## 2.3 Efectos interacción
+
+```{r}
+# Modelo con interacciones chas*rm y rad*dis
+model_int <- lm(log_medv ~ crim + zn +
+                              chas * rm +  #interacción 1
+                              nox +
+                              rad * dis +  #interacción 2
+                              tax + ptratio + black + lstat,
+                data = data)
+
+summary(model_int)
+
+# Comparar con el modelo base
+AIC(model_log, model_int)
+BIC(model_log, model_int)
+
+```
+
+Vemos que empeora el modelo con estas dos interacciones asi que probamos con otras.
+
+```{r}
+model_int_1 <- lm(log_medv ~ crim + zn + chas +
+                              nox * dis +   # interacción 1
+                              rm  * lstat +  # interacción 2
+                              rad + tax + ptratio + black,
+                data = data)
+
+model_int_2 <- lm(log_medv ~ crim + zn + chas +
+        
+                              rm  * lstat +  # interacción 1
+                              rad + tax + ptratio + black,
+                data = data)
+
+
+# Comparar el modelo solo con la interaccion rm*lstat frente con las dos
+AIC(model_int_1, model_int_2)
+BIC(model_int_1, model_int_2)
+```
+vemos que es mejor con las dos interacciones ahora vemos si realmente mejora el modelo
+```{r}
+summary(model_int_1)
+# Comparar con el modelo base
+AIC(model_log, model_int_1)
+BIC(model_log, model_int_1)
+```
+
+
+## 2.4 Efectos cuadráticos
+```{r}
+for (v in c("rm", "lstat", "dis", "crim")) {
+  print(
+    ggplot(data, aes_string(x = v, y = "log_medv")) +
+      geom_point(alpha = 0.4) +
+      geom_smooth(method = "loess", se = FALSE, color = "red") +
+      ggtitle(paste("log(medv) vs", v))
+  )
+}
+```
+
+
+```{r}
+model_quad_rm <- update(model_int_1, . ~ . + I(rm^2))
+model_quad_lstat <- update(model_int_1, . ~ . + I(lstat^2))
+model_quad_both <- update(model_int_1, . ~ . + I(rm^2) + I(lstat^2))
+
+summary(model_quad_both)
+
+AIC(model_int_1, model_quad_rm, model_quad_lstat, model_quad_both)
+BIC(model_int_1, model_quad_rm, model_quad_lstat, model_quad_both)
+```
+```{r}
+summary(model_quad_rm)
+```
+
+
+
+## 2.5 Transformaciones logarítmicas en las variables independientes
+
+hemos visto en los LOESS de antes que dis y crim tenian una forma bastante corregible con un log por lo que vamos a probar esa intuición.
+
+### Crim
+```{r}
+par(mfrow = c(1, 2))
+hist(data$crim, breaks = 30,
+     main = "Distribución de crim", xlab = "crim")
+hist(log(data$crim + 1), breaks = 30,
+     main = "Distribución de log(crim+1)", xlab = "log_crim")
+
+data$log_crim <- log(data$crim + 1)
+
+library(ggplot2)
+
+ggplot(data, aes(x = log_crim, y = log_medv)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "loess", se = FALSE, color = "red") +
+  ggtitle("log(medv) vs log(crim+1)")
+
+```
+
+
+```{r}
+par(mfrow = c(1, 2))
+hist(data$dis, breaks = 30,
+     main = "Distribución de dis", xlab = "dis")
+hist(log(data$dis), breaks = 30,
+     main = "Distribución de log(dis)", xlab = "log_dis")
+
+data$log_dis <- log(data$dis)
+
+ggplot(data, aes(x = log_dis, y = log_medv)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "loess", se = FALSE, color = "red") +
+  ggtitle("log(medv) vs log(dis)")
+
+```
+```{r}
+data$log_crim <- log(data$crim + 1)  # para evitar problemas si hay crim = 0
+data$log_dis  <- log(data$dis)
+
+model_logc <- lm(
+  log_medv ~ log_crim + zn + chas + nox + dis + rm + lstat +
+              rad + tax + ptratio + black +
+              I(rm^2) + nox:dis + rm:lstat,
+  data = data
+)
+
+summary(model_logc)
+AIC(model_quad_rm, model_logc)
+BIC(model_quad_rm, model_logc)
+
+```
+```{r}
+model_logd <- lm(
+  log_medv ~ crim + zn + chas + nox + log_dis +
+              rm + lstat + rad + tax + ptratio + black +
+              I(rm^2) + nox:log_dis + rm:lstat,
+  data = data
+)
+
+summary(model_logd)
+AIC(model_quad_rm, model_logc, model_logd)
+BIC(model_quad_rm, model_logc, model_logd)
+```
+## Modelo final
+```{r}
+model_final <- model_logd # usar ya model_final
+```
+
+
+# 3. Evaluación del Modelo
+
+## 3.1 Análisis de la bondad del ajuste
+
+```{r}
+summary(model_final)
+logLik(model_quad_rm)
+logLik(model_logc)
+logLik(model_final)
+AIC(model_quad_rm, model_logc, model_final)
+BIC(model_quad_rm, model_logc, model_final)
+```
+
+## 3.2 Variabilidad en el precio de la vivienda
+
+```{r}
+summary(model_final)
+```
+
+# 4. Validación del Modelo
+
+## 4.1 Diagnóstico del modelo
+
+```{r}
+par(mfrow=c(2,2))
+plot(model_final)
+```
+
+## 4.2 Heterocedasticidad
+
+```{r}
+#usamos el test de Breusch-Pagan 
+install.packages("lmtest")
+library(lmtest)
+bptest(model_final)
+
+```
+```{r}
+#Comprobamos la homocedasticidad de los residuos 
+plot(fitted(model_final), residuals(model_final),
+     xlab = "Valores ajustados", ylab = "Residuos",
+     main = "Residuos vs Valores ajustados")
+abline(h = 0, col = "red")
+```
+
+## 4.3 Multicolinealidad
+
+```{r}
+library(car)
+vif(model_final, type="predictor")
+```
+
+## 4.4 Autocorrelación
+
+```{r}
+library(lmtest)
+
+dwtest(model_final)
+```
+
+## 4.5 Distribución de los residuos
+
+```{r}
+resid<-residuals(model_final)
+#Vamos a comprobar por último la normalidad de los residuos obtenidos en nuestro modelo
+hist(resid, breaks = 20, main = "Histograma de residuos", xlab = "Residuos")
+```
+```{r}
+qqnorm(resid(model_final))
+qqline(resid(model_final), col = "red")
+```
+```{r}
+set.seed(123)  # para reproducibilidad
+sample_resid <- sample(resid(model_final), 500)
+shapiro.test(sample_resid)
+```
+```{r}
+#Comprobamos si la falta de normalidad se debe a que es muy asimétrica o sobre todo es provocada por la kurtosis
+library(moments)
+# Asimetría
+skew <- skewness(resid)
+print(paste("Asimetría:", round(skew, 3)))
+
+# Curtosis
+kurt <- kurtosis(resid)
+print(paste("Curtosis:", round(kurt, 3)))
+```

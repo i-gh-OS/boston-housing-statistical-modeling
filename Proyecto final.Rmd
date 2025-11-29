@@ -148,7 +148,7 @@ ggplot(data, aes(x = log_children, y = log_charges)) +
 
 
 ```{r}
-data$log_children<- log(data$children + 1)  # para evitar problemas si hay crim = 0
+data$log_children<- log(data$children + 1)  # para evitar problemas si hay children = 0
 
 model_logc <- lm(log_charges ~  -charges - children +smoker + age + bmi + sex + region + log_children + smoker*bmi + smoker*age + I(age^2) + I(bmi^2),
                 data = data
@@ -242,11 +242,15 @@ summary(model_final)
 
 ```{r}
 summary(model_final)
-logLik(model_quad_rm)
-logLik(model_logc)
-logLik(model_final)
-AIC(model_quad_rm, model_logc, model_final)
-BIC(model_quad_rm, model_logc, model_final)
+
+logLik(model1) #modelo inicial
+logLik(model_log) #añadiendo log en la vble de estudio (charges)
+logLik(model_int) #añadiendo interacciones
+logLik(model_quad_bmi) #añadiendo efecto cuadratico (bmi)
+logLik(model_final) #añadiendo log en una vble explicativa (age)
+
+AIC(model1, model_log, model_final)
+BIC(model1, model_log, model_final)
 ```
 
 ## 3.2 Variabilidad en el precio de la vivienda

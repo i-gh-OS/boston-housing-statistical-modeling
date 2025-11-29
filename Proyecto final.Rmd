@@ -9,9 +9,7 @@ output: html_notebook
 #library(car)
 data<- read.csv("insurance.csv", sep=",", stringsAsFactors=TRUE)
 head(data)
-str(data)
 colSums(is.na(data))#Devuelve el nº de valores NA para cada variable
-data
 ```
 
 ## Exploratorio rápido
@@ -20,8 +18,29 @@ data
 str(data)
 summary(data)
 hist(data$charges, main = "Distribución de charges", xlab = "charges")
-
 ```
+
+
+```{r}
+par(mfrow = c(1,2))
+boxplot(data$charges, main = "Charges")
+boxplot(log(data$charges), main = "log(Charges)")
+par(mfrow = c(1,1))
+```
+```{r}
+summary(data[, c("age","bmi","children")])
+table(data$sex)
+table(data$smoker)
+table(data$region)
+```
+miramos cual es el nivel base de las variables dummies
+```{r}
+levels(data$smoker)
+levels(data$region)
+levels(data$sex)
+# el primero que nos sale es la categoria base que no saldrá en el modelo
+```
+
 ```{r}
 # Seleccionamos variables numéricas relevantes
 vars <- c("charges", "age", "bmi",  "children")
@@ -241,16 +260,25 @@ summary(model_final)
 ## 3.1 Análisis de la bondad del ajuste
 
 ```{r}
-summary(model_final)
 
-logLik(model1) #modelo inicial
-logLik(model_log) #añadiendo log en la vble de estudio (charges)
-logLik(model_int) #añadiendo interacciones
-logLik(model_quad_bmi) #añadiendo efecto cuadratico (bmi)
-logLik(model_final) #añadiendo log en una vble explicativa (age)
+# Lista de modelos que quiero comparar
+models <- list(
+  model1        = model1,
+  model_log     = model_log,
+  model_int     = model_int,
+  model_quad_bmi = model_quad_bmi,
+  model_final   = model_final
+)
 
-AIC(model1, model_log, model_final)
-BIC(model1, model_log, model_final)
+#para tabla con logLik, AIC y BIC
+comp <- data.frame(
+  Modelo = names(models),
+  AIC    = sapply(models, AIC),
+  BIC    = sapply(models, BIC)
+)
+
+comp
+
 ```
 
 ## 3.2 Variabilidad en el precio de la vivienda

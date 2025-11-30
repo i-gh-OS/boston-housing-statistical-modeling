@@ -22,10 +22,7 @@ hist(data$charges, main = "Distribución de charges", xlab = "charges")
 
 
 ```{r}
-par(mfrow = c(1,2))
 boxplot(data$charges, main = "Charges")
-boxplot(log(data$charges), main = "log(Charges)")
-par(mfrow = c(1,1))
 ```
 ```{r}
 summary(data[, c("age","bmi","children")])
@@ -80,6 +77,8 @@ data$log_charges <- log(data$charges)
 ggplot(data, aes(x=log_charges)) +
   geom_histogram(bins=30, fill="darkgreen", color="black") +
   labs(title="Distribución de log(charges)")
+
+boxplot(log(data$charges), main = "log(Charges)")
 ```
 
 ```{r}

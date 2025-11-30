@@ -325,7 +325,7 @@ R2_gamma_adj
 
 ```{r}
 #usamos el test de Breusch-Pagan 
-#install.packages("lmtest")
+install.packages("lmtest")
 library(lmtest)
 bptest(model_final)
 bptest(model_gamma)

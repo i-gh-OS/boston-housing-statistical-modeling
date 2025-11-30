@@ -294,21 +294,61 @@ summary(model_final)
 par(mfrow=c(2,2))
 plot(model_final)
 ```
+```{r}
+form_glm <- charges ~ children +
+  log(age) +
+  bmi + I(bmi^2) +
+  sex +
+  region +
+  smoker * log(age) +
+  smoker * bmi
+
+# 3) Ajustar el GLM Gamma con enlace log
+model_gamma <- glm(
+  formula = form_glm,
+  family  = Gamma(link = "log"),
+  data    = data
+)
+```
+
+```{r}
+summary(model_final)
+# Pseudo R2 para el modelo Gamma (1 - deviance/null.deviance)
+1 - model_gamma$deviance / model_gamma$null.deviance
+R2_gamma_adj <- 1 - (model_gamma$deviance / model_gamma$df.residual) /
+                     (model_gamma$null.deviance / model_gamma$df.null)
+R2_gamma_adj
+
+```
 
 ## 4.2 Heterocedasticidad
 
 ```{r}
 #usamos el test de Breusch-Pagan 
-install.packages("lmtest")
+#install.packages("lmtest")
 library(lmtest)
 bptest(model_final)
+bptest(model_gamma)
 
 ```
 ```{r}
+par(mfrow = c(2, 2))
+plot(model_gamma)   # gráficos base: residuos vs ajustados, QQ, etc.
+
+```
+
+```{r}
+
 #Comprobamos la homocedasticidad de los residuos 
 plot(fitted(model_final), residuals(model_final),
      xlab = "Valores ajustados", ylab = "Residuos",
-     main = "Residuos vs Valores ajustados")
+     main = "Residuos vs Valores ajustados: modelo original")
+abline(h = 0, col = "red")
+
+#con el modelo con la funcion Gamma propuesto por la IA
+plot(fitted(model_gamma), residuals(model_gamma, type="deviance"),
+     xlab = "Valores ajustados", ylab = "Deviance tesiduals",
+     main = "Residuos vs Valores ajustados: modelo con funcion Gamma")
 abline(h = 0, col = "red")
 ```
 

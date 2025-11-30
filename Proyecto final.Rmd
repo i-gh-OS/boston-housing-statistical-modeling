@@ -126,11 +126,11 @@ for (v in c("age", "bmi")) {
 
 
 ```{r}
-model_quad_age <- lm(log_charges ~ . -charges + smoker*bmi + smoker*age + I(age^2),
+model_quad_age <- lm(log_charges ~ age + sex + bmi + children + smoker + region + smoker*bmi + smoker*age + I(age^2),
                 data = data)
-model_quad_bmi <- lm(log_charges ~ . -charges + smoker*bmi + smoker*age + I(bmi^2),
+model_quad_bmi <- lm(log_charges ~ age + sex + bmi + children + smoker + region + smoker*bmi + smoker*age + I(bmi^2),
                 data = data)
-model_quad_both <- lm(log_charges ~ . -charges + smoker*bmi + smoker*age + I(age^2) + I(bmi^2),
+model_quad_both <- lm(log_charges ~ age + sex + bmi + children + smoker + region + smoker*bmi + smoker*age + I(age^2) + I(bmi^2),
                 data = data)
 
 summary(model_quad_both)
@@ -143,40 +143,6 @@ BIC(model_int, model_quad_age, model_quad_bmi, model_quad_both)
 
 ## 2.5 Transformaciones logarítmicas en las variables independientes
 
-hemos visto en los LOESS de antes que dis y crim tenian una forma bastante corregible con un log por lo que vamos a probar esa intuición.
-
-### children
-```{r}
-par(mfrow = c(1, 2))
-hist(data$children, breaks = 30,
-     main = "Distribución de children", xlab = "children")
-hist(log(data$children + 1), breaks = 30,
-     main = "Distribución de log(children+1)", xlab = "log_children")
-
-data$log_children <- log(data$children + 1)
-
-library(ggplot2)
-
-ggplot(data, aes(x = log_children, y = log_charges)) +
-  geom_point(alpha = 0.4) +
-  geom_smooth(method = "loess", se = FALSE, color = "red") +
-  ggtitle("log(charges) vs log(children+1)")
-
-```
-
-
-```{r}
-data$log_children<- log(data$children + 1)  # para evitar problemas si hay children = 0
-
-model_logc <- lm(log_charges ~  -charges - children +smoker + age + bmi + sex + region + log_children + smoker*bmi + smoker*age + I(age^2) + I(bmi^2),
-                data = data
-)
-
-summary(model_logc)
-AIC(model_quad_both, model_logc)
-BIC(model_quad_both, model_logc)
-
-```
 ```{r}
 par(mfrow = c(1, 2))
 hist(data$bmi, breaks = 30,
@@ -197,7 +163,7 @@ ggplot(data, aes(x = log_bmi, y = log_charges)) +
 ```{r}
 data$log_bmi<- log(data$bmi)
 
-model_logb <- lm(log_charges ~  -charges - bmi + log_bmi + children +smoker + age + bmi + sex + region  + smoker*log_bmi + smoker*age + I(age^2) ,
+model_logb <- lm(log_charges ~ log_bmi + children +smoker + age + sex + region  + smoker*log_bmi + smoker*age + I(age^2) ,
                 data = data
 )
 
@@ -226,25 +192,13 @@ ggplot(data, aes(x = log_age, y = log_charges)) +
 ```{r}
 data$log_age<- log(data$age)
 
-model_loga <- lm(log_charges ~  -charges + children - age +smoker + log_age + bmi + sex + region  + smoker*bmi + smoker*log_age  + I(bmi^2),
+model_loga <- lm(log_charges ~   children  +smoker + log_age + bmi + sex + region  + smoker*bmi + smoker*log_age  + I(bmi^2),
                 data = data
 )
 
 summary(model_loga)
 AIC(model_quad_both,model_quad_age, model_loga)
 BIC(model_quad_both,model_quad_age, model_loga)
-
-```
-```{r}
-data$log_age<- log(data$age)
-
-model_logac <- lm(log_charges ~  -charges - children - age + log_children +smoker + log_age + bmi + sex + region  + smoker*bmi + smoker*log_age  + I(bmi^2),
-                data = data
-)
-
-summary(model_logac)
-AIC(model_logac, model_loga)
-BIC(model_logac, model_loga)
 
 ```
 ## Modelo final
@@ -353,4 +307,14 @@ print(paste("Asimetría:", round(skew, 3)))
 # Curtosis
 kurt <- kurtosis(resid)
 print(paste("Curtosis:", round(kurt, 3)))
+```
+
+## Modelo simplificado
+```{r}
+model_simple<-lm(log_charges ~  children  +smoker + log_age   + smoker*log_age  ,
+                data = data
+)
+summary(model_simple)
+AIC(model_final, model_simple)
+BIC(model_final, model_simple)
 ```

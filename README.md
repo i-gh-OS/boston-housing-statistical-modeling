@@ -1,119 +1,202 @@
-# Proyecto Final – Inferencia y Modelos de Regresión para los Negocios
+# Statistical Modelling of Boston Housing Prices
 
----
+Statistical modelling project in **R** focused on explaining variation in Boston housing prices through multiple regression, model specification, nonlinear effects and regression diagnostics.
 
-## 1. Selección de la variable objetivo
+The project develops an initial multiple linear regression model and progressively refines its specification using transformations, interaction terms, polynomial effects and information criteria.
 
-Debéis escoger:
+## Project Overview
 
-* Una **variable numérica** como variable objetivo (**Y**).
-* Hasta **10 variables explicativas** (**X**) que potencialmente influyan sobre Y.
+The objective is to model the relationship between housing prices and a set of socioeconomic, environmental and urban characteristics.
 
----
+Rather than fitting a single regression specification, the project follows an iterative statistical modelling process:
 
-## 2. Aprobación previa del profesor
+1. Build a baseline multiple linear regression model
+2. Evaluate model specification
+3. Transform variables where appropriate
+4. Introduce interaction and nonlinear effects
+5. Compare competing specifications
+6. Diagnose violations of regression assumptions
 
-Antes de comenzar el análisis, es obligatorio subir a Moodle:
+The final specification explains approximately **83% of the observed variation in housing prices**.
 
-* El **dataset** (archivo adjunto).
-* Una **breve descripción del tema**.
-* La **propuesta de variable objetivo** y las **variables explicativas** seleccionadas.
+## Model Development
 
-No se debe iniciar el análisis sin la confirmación del profesor.
+### 1. Baseline Multiple Regression
 
----
+The analysis begins with a multiple linear regression containing the available explanatory variables.
 
-## 3. Preprocesamiento del dataset
+The baseline model provides a reference specification from which alternative models can be evaluated.
 
-Deberéis realizar las transformaciones necesarias para que el modelo sea válido. Entre ellas:
+Variables and specifications are subsequently compared using statistical significance and model-selection criteria.
 
-* Eliminación de **valores atípicos**.
-* Tratamiento de **datos ausentes**.
-* Conversión de **tipos de datos incorrectos**.
-* **Codificación one-hot** para variables categóricas.
+### 2. Response Transformation
 
----
+A logarithmic transformation of the dependent variable was evaluated to improve model specification.
 
-## 4. Ajuste del modelo
+Using `log(medv)` instead of housing prices in levels substantially improved model fit:
 
-Se debe ajustar un **modelo de regresión lineal múltiple** y justificar:
+- Adjusted R² increased from approximately **0.735 to 0.784**
+- AIC decreased from **3023.7 to -232.0**
+- BIC decreased from **3078.7 to -177.1**
 
-* Interpretación de los **coeficientes**.
-* Inclusión de **términos cuadráticos**, **logarítmicos** e **interacciones** si procede.
+The logarithmic specification was therefore retained for subsequent model development.
 
----
+### 3. Interaction Effects
 
-## 5. Validación del modelo
+Two interaction effects were investigated:
 
-Comprobación de los siguientes supuestos:
+- `rm × lstat`
+- `nox × dis`
 
-* **Normalidad** de los residuos.
-* **Heterocedasticidad**.
-* **Autocorrelación**.
-* **Multicolinealidad** (VIF).
+The `rm × lstat` interaction was highly statistically significant, indicating that the relationship between the number of rooms and housing value depends on the socioeconomic characteristics of the neighborhood.
 
-Además, debe proponerse un **modelo alternativo más simple**, con menor R² ajustado pero **más interpretable**.
+The interaction model improved adjusted R² to approximately **0.811** and further reduced both AIC and BIC.
 
----
+### 4. Nonlinear Effects
 
-## 6. Conclusiones e insights
+Exploratory analysis suggested nonlinear relationships between housing prices and several explanatory variables.
 
-El informe final debe incluir **al menos 5 conclusiones relevantes y aplicadas al contexto del dataset**.
+Quadratic terms were evaluated for:
 
----
+- `rm²`
+- `lstat²`
 
-## 7. Presentación y entrega
+The inclusion of `rm²` improved model-selection criteria, while the quadratic `lstat` term did not provide sufficient improvement.
 
-* **Presentación oral** de 5 minutos por grupo.
-* **Diapositivas resumen** del trabajo.
-* **Código empleado** (R).
-* **Defensa oral** con preguntas.
+The final specification therefore retained the nonlinear effect in `rm`.
 
----
+### 5. Predictor Transformations
 
-## 8. Ejemplo de propuesta – Fondos de inversión
+Logarithmic transformations were evaluated for skewed explanatory variables.
 
-### Problema
+Transforming crime rate did not improve the model and was therefore rejected.
 
-Identificar qué factores explican la **rentabilidad anual** de los fondos de inversión.
+In contrast, replacing `dis` with `log(dis)` improved model performance:
 
-### Datos
+- AIC: **-322.6**
+- BIC: **-254.9**
+- Adjusted R²: approximately **0.821**
 
-* Fuente: *Morningstar*, *Kaggle* u otros.
-* Datos **transversales** (cada fila = un fondo).
+This transformation was retained in the final model.
 
-### Variables
+## Final Model
 
-| Variable                   | Tipo                | Rango                | Justificación                                  |
-| -------------------------- | ------------------- | -------------------- | ---------------------------------------------- |
-| **Rentabilidad anual (%)** | Numérica (objetivo) | –30% a 60%           | Variable a explicar                            |
-| **Expense ratio**          | Numérica            | 0.1% a 3%            | Costes altos ↓ rentabilidad neta               |
-| **Volatilidad histórica**  | Numérica            | 5% a 40%             | Mayor riesgo → mayor rentabilidad esperada     |
-| **Tamaño del fondo (USD)** | Numérica            | 10 a 100.000         | Tamaños extremos pueden afectar al rendimiento |
-| **Estilo de inversión**    | Categórica          | Growth, Value, Blend | Se codifica con dummies                        |
+The final specification combines:
 
-### Modelo propuesto
+- Multiple linear regression
+- Log-transformed response variable
+- Log-transformed predictor
+- Interaction effects
+- A quadratic term
+- Model selection using AIC and BIC
 
-```
-Rentabilidad_fondo = β0 
-                    + β1 · Expense_ratio 
-                    + β2 · Volatilidad 
-                    + β3 · Tamaño_fondo 
-                    + β4 · Estilo
-```
+The final model achieves approximately:
 
-### Signos esperados
+**R² ≈ 0.83**
 
-* **β₁ < 0**: mayores costes → menor rentabilidad.
-* **β₂ > 0**: más riesgo → mayor rentabilidad esperada.
-* **β₃**: signo incierto.
-* **β₄**: estilo *Growth* positivo en años de expansión.
+meaning that roughly 83% of the observed variation in housing prices is explained by the variables included in the model.
 
-### Supuestos del modelo
+## Interpretation of Selected Effects
 
-* Errores con **media cero** si las variables relevantes están incluidas.
-* **Heterocedasticidad probable** → test de White o Breusch–Pagan.
-* **Exogeneidad** plausible.
-* **Autocorrelación no aplicable** (datos de corte transversal).
-* Comprobación de **multicolinealidad**.
+### Crime Rate
 
+Higher crime rates are associated with lower housing values, holding the remaining variables constant.
+
+### Distance to Employment Centers
+
+Because distance enters the model logarithmically, its coefficient can be interpreted approximately in elasticity terms.
+
+A 1% increase in distance to employment centers is associated with an approximately **0.41% decrease** in expected housing value, conditional on the remaining variables and interaction effects.
+
+### Number of Rooms
+
+The inclusion of `rm²` indicates that the effect of additional rooms is nonlinear rather than constant across housing sizes.
+
+### Rooms × Socioeconomic Status
+
+The interaction between `rm` and `lstat` shows that the effect of additional rooms varies across neighborhoods.
+
+The positive effect associated with larger homes becomes weaker as `lstat` increases.
+
+## Model Selection
+
+Competing model specifications were evaluated using:
+
+- Adjusted R²
+- Akaike Information Criterion (**AIC**)
+- Bayesian Information Criterion (**BIC**)
+- Log-likelihood
+
+These criteria were used jointly to balance explanatory performance against increasing model complexity.
+
+The final specification achieved the best overall combination of goodness of fit and model parsimony among the alternatives considered.
+
+## Regression Diagnostics
+
+Model assumptions were evaluated rather than treating goodness of fit as sufficient evidence of model quality.
+
+### Residual Analysis
+
+Residual-vs-fitted and Q-Q plots were used to evaluate functional form and the residual distribution.
+
+The residuals were broadly centered around zero but displayed departures from ideal regression assumptions, particularly in the tails.
+
+### Heteroscedasticity
+
+The **Breusch-Pagan test** strongly rejected the null hypothesis of constant residual variance.
+
+The model therefore exhibits heteroscedasticity.
+
+### Multicollinearity
+
+Variance Inflation Factors (**VIF**) were analyzed to assess multicollinearity.
+
+No variables showed severe multicollinearity under the VIF > 10 criterion, although moderate multicollinearity was identified for some predictors.
+
+### Residual Dependence
+
+Residual dependence was also examined.
+
+The diagnostic statistic suggested some positive autocorrelation, indicating that the model may not capture every systematic component of the data.
+
+### Residual Normality
+
+A Shapiro-Wilk test rejected exact normality of the residuals.
+
+However, graphical analysis indicated an approximately symmetric residual distribution, with the main departures occurring in the tails.
+
+## Key Findings
+
+- Model specification substantially improved after transforming the response variable.
+- Interaction terms captured relationships that could not be represented by purely additive effects.
+- A quadratic room effect provided evidence of nonlinearity.
+- `log(dis)` improved the final specification, while transforming crime rate did not.
+- The final model explains approximately **83% of housing-price variation**.
+- AIC, BIC and log-likelihood favored the final specification over the alternatives considered.
+- Diagnostic testing revealed heteroscedasticity, moderate multicollinearity in some predictors and departures from residual normality.
+
+## Methodology
+
+- Multiple Linear Regression
+- Interaction Effects
+- Polynomial Regression Terms
+- Log Transformations
+- Model Specification
+- AIC / BIC Model Selection
+- Log-Likelihood
+- Residual Diagnostics
+- Breusch-Pagan Test
+- Variance Inflation Factors
+- Shapiro-Wilk Test
+
+## Technologies
+
+- **R**
+- Statistical modelling
+- Regression analysis
+- Model diagnostics
+- Data visualization
+
+## Project Context
+
+Academic statistical modelling project developed as part of the **Telecommunications Engineering & Business Analytics** program at ICAI – Universidad Pontificia Comillas.
